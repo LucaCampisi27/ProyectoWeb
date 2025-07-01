@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 // coincidan exactamente con los nombres de los archivos en tu sistema.
 import logoCamion from './assets/CEA.png';
 import fondoLogistica from './assets/CEAFONDO.png';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFacebookF, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 
 // Componente para simular iconos de Lucide React
 const Icon = ({ name, className }) => {
@@ -463,8 +465,20 @@ const App = () => {
 </ul>
 
 <div className="social-icons">
-  {/* Iconos de redes sociales (placeholders) */}
-  <button className="social-icon-link" onClick={() => alert("Red social")}>🌐</button>
+  {/* Botón que abre Facebook */}
+  <button
+  className="social-icon-link"
+  onClick={() => window.open("https://www.facebook.com/luckita.campisi/", "_blank")}
+>
+  <FontAwesomeIcon icon={faFacebookF} size="2x" />
+</button>
+
+<button
+  className="social-icon-link"
+  onClick={() => window.open("https://wa.me/5493813013866", "_blank")}
+>
+  <FontAwesomeIcon icon={faWhatsapp} size="2x" />
+</button>
 </div>
 
           <p className="copyright-text">
@@ -1232,6 +1246,35 @@ const App = () => {
                 padding-right: 3rem; /* Nuevo: Más padding en desktop */
             }
         }
+.footer-link {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 5px 10px;
+  font-size: 16px;
+  text-decoration: underline;
+  transition: color 0.3s ease;
+}
+
+.footer-link:hover {
+  color: #00ccff;
+}
+
+.social-icon-link {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.2s ease, color 0.2s ease;
+  margin-right: 10px;
+}
+
+.social-icon-link:hover {
+  transform: scale(1.2);
+  color: #00ccff;
+}
 
         .logo-container-footer {
             display: flex;
