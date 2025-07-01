@@ -457,9 +457,9 @@ const App = () => {
             {/* El texto "CEA" se ha eliminado del span si solo quieres la imagen */}
           </div>
           <ul className="footer-links">
-            <li><a href="#" className="footer-link">Privacidad</a></li>
-            <li><a href="#" className="footer-link">Términos</a></li>
-            <li><a href="#" className="footer-link">Mapa</a></li>
+            <li><a href="javascript:void(0)" className="footer-link">Privacidad</a></li>
+<li><a href="javascript:void(0)" className="footer-link">Términos</a></li>
+<li><a href="javascript:void(0)" className="footer-link">Mapa del sitio</a></li>
           </ul>
           <div className="social-icons">
             {/* Iconos de redes sociales (placeholders) */}
