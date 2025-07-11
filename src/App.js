@@ -86,85 +86,138 @@ const App = () => {
     }
   };
 
-  // Función para enviar mensajes al chatbot (API de Gemini)
-  const sendMessageToChatbot = async () => {
-    if (!userMessage.trim()) return;
+ // Función para enviar mensajes al chatbot (API de Gemini)
+const sendMessageToChatbot = async () => {
+  if (!userMessage.trim()) return;
 
-    const newUserMessage = { role: 'user', parts: [{ text: userMessage }] };
-    const updatedChatHistory = [...chatHistory, newUserMessage];
-    setChatHistory(updatedChatHistory);
-    setUserMessage('');
-    setIsLoading(true);
+  const newUserMessage = { role: 'user', parts: [{ text: userMessage }] };
+  const updatedChatHistory = [...chatHistory, newUserMessage];
+  setChatHistory(updatedChatHistory);
+  setUserMessage('');
+  setIsLoading(true);
 
-    try {
-      const payload = { contents: updatedChatHistory };
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  try {
+    // Lee la clave API de las variables de entorno de Vite
+    // IMPORTANTE: Si no estás usando Vite, esto debería ser process.env.REACT_APP_GEMINI_API_KEY
+    // o la forma correspondiente a tu bundler.
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const result = await response.json();
-
-      if (result.candidates && result.candidates.length > 0 &&
-          result.candidates[0].content && result.candidates[0].content.parts &&
-          result.candidates[0].content.parts.length > 0) {
-        const botResponseText = result.candidates[0].content.parts[0].text;
-        setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: botResponseText }] }]);
-      } else {
-        setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: 'Lo siento, no pude generar una respuesta. Intenta de nuevo.' }] }]);
-      }
-    } catch (error) {
-      console.error('Error al comunicarse con el chatbot:', error);
-      setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: 'Hubo un error al conectar con el servicio. Por favor, inténtalo más tarde.' }] }]);
-    } finally {
+    // --- INICIO DE DEPURACIÓN ---
+    console.log("Valor de apiKey antes de la llamada a Gemini (chatbot):", apiKey);
+    if (!apiKey) {
+      console.error("Error: VITE_GEMINI_API_KEY no está definida en el entorno del navegador.");
+      setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: 'Error: La clave de la API no está configurada. Revisa la consola para más detalles.' }] }]);
       setIsLoading(false);
-    }
-  };
-
-  // Función para generar la descripción de carga (API de Gemini)
-  const generateCargoDescription = async () => {
-    if (!cargoDetails.trim()) {
-      setGeneratedDescription('Por favor, ingresa algunos detalles sobre la carga.');
       return;
     }
+    // --- FIN DE DEPURACIÓN ---
 
-    setIsGeneratingDescription(true);
-    setGeneratedDescription(''); // Limpiar la descripción anterior
+    const payload = { contents: updatedChatHistory };
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    // --- INICIO DE DEPURACIÓN ---
+    if (!response.ok) {
+      const errorBody = await response.text(); // Intenta leer el cuerpo del error
+      console.error(`Error HTTP: ${response.status} ${response.statusText} - Cuerpo: ${errorBody}`);
+      setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: `Error de la API: ${response.status}. Revisa la consola para más detalles.` }] }]);
+      setIsLoading(false);
+      return;
+    }
+    // --- FIN DE DEPURACIÓN ---
+
+    const result = await response.json();
+
+    if (result.candidates && result.candidates.length > 0 &&
+        result.candidates[0].content && result.candidates[0].content.parts &&
+        result.candidates[0].content.parts.length > 0) {
+      const botResponseText = result.candidates[0].content.parts[0].text;
+      setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: botResponseText }] }]);
+    } else {
+      // --- INICIO DE DEPURACIÓN ---
+      console.error("Estructura de respuesta inesperada de la API de Gemini:", result);
+      // --- FIN DE DEPURACIÓN ---
+      setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: 'Lo siento, no pude generar una respuesta. Intenta de nuevo.' }] }]);
+    }
+  } catch (error) {
+    console.error('Error al comunicarse con el chatbot:', error);
+    setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: 'Hubo un error al conectar con el servicio. Por favor, inténtalo más tarde.' }] }]);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  // Función para generar la descripción de carga (API de Gemini)
+const generateCargoDescription = async () => {
+  if (!cargoDetails.trim()) {
+    setGeneratedDescription('Por favor, ingresa algunos detalles sobre la carga.');
+    return;
+  }
+
+  setIsGeneratingDescription(true);
+  setGeneratedDescription(''); // Limpiar la descripción anterior
+
+  try {
+    // Lee la clave API de las variables de entorno de Vite
+    // IMPORTANTE: Si no estás usando Vite, esto debería ser process.env.REACT_APP_GEMINI_API_KEY
+    // o la forma correspondiente a tu bundler.
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+    // --- INICIO DE DEPURACIÓN ---
+    console.log("Valor de apiKey antes de la llamada a Gemini (generador de carga):", apiKey);
+    if (!apiKey) {
+      console.error("Error: VITE_GEMINI_API_KEY no está definida en el entorno del navegador.");
+      setGeneratedDescription('Error: La clave de la API no está configurada. Revisa la consola para más detalles.');
+      setIsGeneratingDescription(false);
+      return;
+    }
+    // --- FIN DE DEPURACIÓN ---
 
     const prompt = `Genera una descripción profesional y concisa para una publicación de carga de logística, basándote en los siguientes detalles: "${cargoDetails}". Incluye información relevante para transportistas como tipo de carga, volumen/peso estimado, origen, destino y cualquier requisito especial.`;
 
-    try {
-      const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
 
-      const result = await response.json();
-
-      if (result.candidates && result.candidates.length > 0 &&
-          result.candidates[0].content && result.candidates[0].content.parts &&
-          result.candidates[0].content.parts.length > 0) {
-        setGeneratedDescription(result.candidates[0].content.parts[0].text);
-      } else {
-        setGeneratedDescription('No se pudo generar la descripción. Intenta con más detalles.');
-      }
-    } catch (error) {
-      console.error('Error al generar la descripción de carga:', error);
-      setGeneratedDescription('Hubo un error al generar la descripción. Por favor, inténtalo más tarde.');
-    } finally {
+    // --- INICIO DE DEPURACIÓN ---
+    if (!response.ok) {
+      const errorBody = await response.text(); // Intenta leer el cuerpo del error
+      console.error(`Error HTTP: ${response.status} ${response.statusText} - Cuerpo: ${errorBody}`);
+      setGeneratedDescription(`Error de la API: ${response.status}. Revisa la consola para más detalles.`);
       setIsGeneratingDescription(false);
+      return;
     }
-  };
+    // --- FIN DE DEPURACIÓN ---
 
+    const result = await response.json();
+
+    if (result.candidates && result.candidates.length > 0 &&
+        result.candidates[0].content && result.candidates[0].content.parts &&
+        result.candidates[0].content.parts.length > 0) {
+      setGeneratedDescription(result.candidates[0].content.parts[0].text);
+    } else {
+      // --- INICIO DE DEPURACIÓN ---
+      console.error("Estructura de respuesta inesperada de la API de Gemini:", result);
+      // --- FIN DE DEPURACIÓN ---
+      setGeneratedDescription('No se pudo generar la descripción. Intenta con más detalles.');
+    }
+  } catch (error) {
+    console.error('Error al generar la descripción de carga:', error);
+    setGeneratedDescription('Hubo un error al generar la descripción. Por favor, inténtalo más tarde.');
+  } finally {
+    setIsGeneratingDescription(false);
+  }
+};
   return (
     <div className="app-container">
       {/* Header */}
