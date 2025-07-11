@@ -98,7 +98,7 @@ const App = () => {
 
     try {
       const payload = { contents: updatedChatHistory };
-      const apiKey = ""; // La clave API se proporciona en tiempo de ejecución por Canvas
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const response = await fetch(apiUrl, {
@@ -139,7 +139,7 @@ const App = () => {
 
     try {
       const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-      const apiKey = ""; // La clave API se proporciona en tiempo de ejecución por Canvas
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
       const response = await fetch(apiUrl, {
@@ -465,7 +465,7 @@ const App = () => {
 </ul>
 
 <div className="social-icons">
-  {/* Botón que abre Facebook */}
+  {}
   <button
   className="social-icon-link"
   onClick={() => window.open("https://www.facebook.com/luckita.campisi/", "_blank")}
