@@ -1,67 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react'; // Importa useRef y useEffect
 // IMPORTANTE: Asegúrate de que estos archivos de imagen (CEA.png y CEAFONDO.png)
 // existan en tu carpeta 'src/assets/' y que los nombres (incluyendo mayúsculas/minúsculas)
 // coincidan exactamente con los nombres de los archivos en tu sistema.
 import logoCamion from './assets/CEA.png';
 import fondoLogistica from './assets/CEAFONDO.png';
+// aboutUsImage ya no se importa ya que se usa logoCamion directamente en JSX
+
+// Importaciones de Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFacebookF, faWhatsapp } from '@fortawesome/free-brands-svg-icons';
+import {
+  faTruck,
+  faWarehouse,
+  faBoxOpen, // Para "Package"
+  faPhone,
+  faEnvelope, // Para "Mail"
+  faMapPin,
+  faBars, // Para "Menu"
+  faTimes, // Para "X"
+  faCommentAlt, // Para "MessageSquare"
+  faFileAlt // Para "FileText"
+} from '@fortawesome/free-solid-svg-icons';
+import { faFacebookF, faWhatsapp } from '@fortawesome/free-brands-svg-icons'; // Asegúrate de que esta importación sea correcta
 
-// Componente para simular iconos de Lucide React
-const Icon = ({ name, className }) => {
-  let svgPath = '';
-  switch (name) {
-    case 'Truck':
-      svgPath = 'M10 17l-5-5 5-5M19 17l-5-5 5-5';
-      break;
-    case 'Warehouse':
-      svgPath = 'M2 20h20v-2H2v2zm2-4h16V4H4v12zm2-8h4v4H6V8zm6 0h4v4h-4V8z';
-      break;
-    case 'Package':
-      svgPath = 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5';
-      break;
-    case 'Phone':
-      svgPath = 'M22 16.92v3.08a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.63A2 2 0 014.08 2H7.1a2 2 0 012 1.74 15.74 15.74 0 00.95 4.54A2 2 0 018.81 10.1l-1.43 1.43a15.94 15.94 0 006.35 6.35l1.43-1.43a2 2 0 012.48-.21 15.74 15.74 0 004.54.95 2 2 0 011.74 2z';
-      break;
-    case 'Mail':
-      svgPath = 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6';
-      break;
-    case 'MapPin':
-      svgPath = 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5S13.38 11.5 12 11.5z';
-      break;
-    case 'Menu':
-      svgPath = 'M4 6h16M4 12h16M4 18h16';
-      break;
-    case 'X':
-      svgPath = 'M18 6L6 18M6 6l12 12';
-      break;
-    case 'MessageSquare':
-      svgPath = 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z';
-      break;
-    case 'FileText':
-      svgPath = 'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6M10 15h4M10 11h4M10 19h4';
-      break;
-    default:
-      svgPath = '';
-  }
-
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d={svgPath} />
-    </svg>
-  );
-};
+// El componente Icon ya no es necesario, ya que usamos FontAwesomeIcon directamente.
+// Se ha eliminado para simplificar el código.
 
 
 // Componente principal de la aplicación
@@ -77,6 +39,18 @@ const App = () => {
   const [generatedDescription, setGeneratedDescription] = useState('');
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
 
+  // Ref para el textarea oculto que se usará para copiar al portapapeles
+  const textareaRef = useRef(null);
+  // Nueva ref para el contenedor de mensajes del chatbot
+  const chatbotMessagesRef = useRef(null);
+
+  // Efecto para hacer scroll al final del chat cuando se actualiza el historial
+  useEffect(() => {
+    if (chatbotMessagesRef.current) {
+      chatbotMessagesRef.current.scrollTop = chatbotMessagesRef.current.scrollHeight;
+    }
+  }, [chatHistory]);
+
   // Función para manejar el scroll suave
   const scrollToSection = (id) => {
     const element = document.getElementById(id);
@@ -86,138 +60,157 @@ const App = () => {
     }
   };
 
- // Función para enviar mensajes al chatbot (API de Gemini)
-const sendMessageToChatbot = async () => {
-  if (!userMessage.trim()) return;
-
-  const newUserMessage = { role: 'user', parts: [{ text: userMessage }] };
-  const updatedChatHistory = [...chatHistory, newUserMessage];
-  setChatHistory(updatedChatHistory);
-  setUserMessage('');
-  setIsLoading(true);
-
-  try {
-    // Lee la clave API de las variables de entorno de Vite
-    // IMPORTANTE: Si no estás usando Vite, esto debería ser process.env.REACT_APP_GEMINI_API_KEY
-    // o la forma correspondiente a tu bundler.
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  // Función para obtener la clave API (específica para Create React App)
+  const getApiKey = () => {
+    // Para proyectos de Create React App, las variables de entorno deben comenzar con REACT_APP_
+    const apiKey = process.env.REACT_APP_GEMINI_API_KEY;
 
     // --- INICIO DE DEPURACIÓN ---
-    console.log("Valor de apiKey antes de la llamada a Gemini (chatbot):", apiKey);
+    console.log("Valor de apiKey antes de la llamada a Gemini (getApiKey):", apiKey);
     if (!apiKey) {
-      console.error("Error: VITE_GEMINI_API_KEY no está definida en el entorno del navegador.");
-      setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: 'Error: La clave de la API no está configurada. Revisa la consola para más detalles.' }] }]);
-      setIsLoading(false);
-      return;
-    }
-    // --- FIN DE DEPURACIÓN ---
-
-    const payload = { contents: updatedChatHistory };
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    // --- INICIO DE DEPURACIÓN ---
-    if (!response.ok) {
-      const errorBody = await response.text(); // Intenta leer el cuerpo del error
-      console.error(`Error HTTP: ${response.status} ${response.statusText} - Cuerpo: ${errorBody}`);
-      setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: `Error de la API: ${response.status}. Revisa la consola para más detalles.` }] }]);
-      setIsLoading(false);
-      return;
-    }
-    // --- FIN DE DEPURACIÓN ---
-
-    const result = await response.json();
-
-    if (result.candidates && result.candidates.length > 0 &&
-        result.candidates[0].content && result.candidates[0].content.parts &&
-        result.candidates[0].content.parts.length > 0) {
-      const botResponseText = result.candidates[0].content.parts[0].text;
-      setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: botResponseText }] }]);
+      console.error("Error: REACT_APP_GEMINI_API_KEY no está definida en el entorno del navegador. Asegúrate de que esté configurada en tu archivo .env o .env.local y que el nombre sea correcto.");
     } else {
-      // --- INICIO DE DEPURACIÓN ---
-      console.error("Estructura de respuesta inesperada de la API de Gemini:", result);
-      // --- FIN DE DEPURACIÓN ---
-      setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: 'Lo siento, no pude generar una respuesta. Intenta de nuevo.' }] }]);
+      console.log("API Key (REACT_APP_GEMINI_API_KEY) encontrada.");
     }
-  } catch (error) {
-    console.error('Error al comunicarse con el chatbot:', error);
-    setChatHistory(prevHistory => [...prevHistory, { role: 'model', parts: [{ text: 'Hubo un error al conectar con el servicio. Por favor, inténtalo más tarde.' }] }]);
-  } finally {
-    setIsLoading(false);
-  }
-};
+    // --- FIN DE DEPURACIÓN ---
+    return apiKey;
+  };
+
+
+  // Función para enviar mensajes al chatbot (API de Gemini)
+  const sendMessageToChatbot = async () => {
+    if (!userMessage.trim()) return;
+
+    // Asignar un ID único a cada mensaje para una mejor reconciliación de React
+    const newUserMessage = { id: Date.now(), role: 'user', parts: [{ text: userMessage }] };
+    const updatedChatHistory = [...chatHistory, newUserMessage];
+    setChatHistory(updatedChatHistory);
+    setUserMessage('');
+    setIsLoading(true);
+
+    try {
+      const apiKey = getApiKey();
+
+      if (!apiKey) {
+        setChatHistory(prevHistory => [...prevHistory, { id: Date.now(), role: 'model', parts: [{ text: 'Error: La clave de la API no está configurada. Revisa la consola para más detalles.' }] }]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Crear un payload para la API que no incluya el campo 'id'
+      // Esto es crucial para resolver el error "Unknown name \"id\""
+      const apiPayloadContents = updatedChatHistory.map(({ id, ...rest }) => rest);
+      const payload = { contents: apiPayloadContents };
+
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+      // --- INICIO DE DEPURACIÓN ADICIONAL ---
+      console.log("DEBUG: Enviando solicitud al chatbot de Gemini API:");
+      console.log("DEBUG: URL:", apiUrl);
+      console.log("DEBUG: Payload (para API):", JSON.stringify(payload, null, 2)); // Imprime el payload formateado
+      // --- FIN DE DEPURACIÓN ADICIONAL ---
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      // --- INICIO DE DEPURACIÓN ---
+      if (!response.ok) {
+        const errorBody = await response.text(); // Intenta leer el cuerpo del error
+        console.error(`Error HTTP (chatbot): ${response.status} ${response.statusText} - Cuerpo:`, errorBody);
+        setChatHistory(prevHistory => [...prevHistory, { id: Date.now(), role: 'model', parts: [{ text: `Error de la API: ${response.status}. Revisa la consola para más detalles.` }] }]);
+        setIsLoading(false);
+        return;
+      }
+      // --- FIN DE DEPURACIÓN ---
+
+      const result = await response.json();
+
+      if (result.candidates && result.candidates.length > 0 &&
+          result.candidates[0].content && result.candidates[0].content.parts &&
+          result.candidates[0].content.parts.length > 0) {
+        const botResponseText = result.candidates[0].content.parts[0].text;
+        // Asignar un ID único al mensaje del bot también
+        setChatHistory(prevHistory => [...prevHistory, { id: Date.now() + 1, role: 'model', parts: [{ text: botResponseText }] }]);
+      } else {
+        // --- INICIO DE DEPURACIÓN ---
+        console.error("Estructura de respuesta inesperada de la API de Gemini (chatbot):", result);
+        // --- FIN DE DEPURACIÓN ---
+        setChatHistory(prevHistory => [...prevHistory, { id: Date.now(), role: 'model', parts: [{ text: 'Lo siento, no pude generar una respuesta. Intenta de nuevo.' }] }]);
+      }
+    } catch (error) {
+      console.error('Error al comunicarse con el chatbot:', error);
+      setChatHistory(prevHistory => [...prevHistory, { id: Date.now(), role: 'model', parts: [{ text: 'Hubo un error al conectar con el servicio. Por favor, inténtalo más tarde.' }] }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Función para generar la descripción de carga (API de Gemini)
-const generateCargoDescription = async () => {
-  if (!cargoDetails.trim()) {
-    setGeneratedDescription('Por favor, ingresa algunos detalles sobre la carga.');
-    return;
-  }
-
-  setIsGeneratingDescription(true);
-  setGeneratedDescription(''); // Limpiar la descripción anterior
-
-  try {
-    // Lee la clave API de las variables de entorno de Vite
-    // IMPORTANTE: Si no estás usando Vite, esto debería ser process.env.REACT_APP_GEMINI_API_KEY
-    // o la forma correspondiente a tu bundler.
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
-    // --- INICIO DE DEPURACIÓN ---
-    console.log("Valor de apiKey antes de la llamada a Gemini (generador de carga):", apiKey);
-    if (!apiKey) {
-      console.error("Error: VITE_GEMINI_API_KEY no está definida en el entorno del navegador.");
-      setGeneratedDescription('Error: La clave de la API no está configurada. Revisa la consola para más detalles.');
-      setIsGeneratingDescription(false);
+  const generateCargoDescription = async () => {
+    if (!cargoDetails.trim()) {
+      setGeneratedDescription('Por favor, ingresa algunos detalles sobre la carga.');
       return;
     }
-    // --- FIN DE DEPURACIÓN ---
 
-    const prompt = `Genera una descripción profesional y concisa para una publicación de carga de logística, basándote en los siguientes detalles: "${cargoDetails}". Incluye información relevante para transportistas como tipo de carga, volumen/peso estimado, origen, destino y cualquier requisito especial.`;
+    setIsGeneratingDescription(true);
+    setGeneratedDescription(''); // Limpiar la descripción anterior
 
-    const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    // Prompt simplificado para obtener una descripción en lenguaje natural con valor aproximado
+    const prompt = `Genera una descripción profesional y concisa para una publicación de carga de logística, basándote en los siguientes detalles: "${cargoDetails}". Incluye información relevante para transportistas como tipo de carga, volumen/peso estimado, origen, destino, cualquier requisito especial y un valor aproximado en USD para esta carga.`;
 
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    // Payload simplificado sin responseMimeType y responseSchema
+    const payload = {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    };
 
-    // --- INICIO DE DEPURACIÓN ---
-    if (!response.ok) {
-      const errorBody = await response.text(); // Intenta leer el cuerpo del error
-      console.error(`Error HTTP: ${response.status} ${response.statusText} - Cuerpo: ${errorBody}`);
-      setGeneratedDescription(`Error de la API: ${response.status}. Revisa la consola para más detalles.`);
-      setIsGeneratingDescription(false);
-      return;
-    }
-    // --- FIN DE DEPURACIÓN ---
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${getApiKey()}`;
 
-    const result = await response.json();
+    // --- INICIO DE DEPURACIÓN ADICIONAL ---
+    console.log("DEBUG: Enviando solicitud al generador de carga de Gemini API:");
+    console.log("DEBUG: URL:", apiUrl);
+    console.log("DEBUG: Payload:", JSON.stringify(payload, null, 2)); // Imprime el payload formateado
+    // --- FIN DE DEPURACIÓN ADICIONAL ---
 
-    if (result.candidates && result.candidates.length > 0 &&
-        result.candidates[0].content && result.candidates[0].content.parts &&
-        result.candidates[0].content.parts.length > 0) {
-      setGeneratedDescription(result.candidates[0].content.parts[0].text);
-    } else {
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
       // --- INICIO DE DEPURACIÓN ---
-      console.error("Estructura de respuesta inesperada de la API de Gemini:", result);
+      if (!response.ok) {
+        const errorBody = await response.text(); // Intenta leer el cuerpo del error
+        console.error(`Error HTTP (generador de carga): ${response.status} ${response.statusText} - Cuerpo:`, errorBody);
+        setGeneratedDescription(`Error de la API: ${response.status}. Revisa la consola para más detalles.`);
+        setIsGeneratingDescription(false);
+        return;
+      }
       // --- FIN DE DEPURACIÓN ---
-      setGeneratedDescription('No se pudo generar la descripción. Intenta con más detalles.');
+
+      const result = await response.json();
+
+      if (result.candidates && result.candidates.length > 0 &&
+          result.candidates[0].content && result.candidates[0].content.parts &&
+          result.candidates[0].content.parts.length > 0) {
+        setGeneratedDescription(result.candidates[0].content.parts[0].text);
+      } else {
+        // --- INICIO DE DEPURACIÓN ---
+        console.error("Estructura de respuesta inesperada de la API de Gemini (generador de carga):", result);
+        // --- FIN DE DEPURACIÓN ---
+        setGeneratedDescription('No se pudo generar la descripción. Intenta con más detalles.');
+      }
+    } catch (error) {
+      console.error('Error al generar la descripción de carga:', error);
+      setGeneratedDescription('Hubo un error al generar la descripción. Por favor, inténtalo más tarde.');
+    } finally {
+      setIsGeneratingDescription(false);
     }
-  } catch (error) {
-    console.error('Error al generar la descripción de carga:', error);
-    setGeneratedDescription('Hubo un error al generar la descripción. Por favor, inténtalo más tarde.');
-  } finally {
-    setIsGeneratingDescription(false);
-  }
-};
+  };
+
   return (
     <div className="app-container">
       {/* Header */}
@@ -226,7 +219,7 @@ const generateCargoDescription = async () => {
           {/* Logo con imagen local */}
           <div className="logo-container">
             <img src={logoCamion} alt="Logo CEA" className="logo-icon" /> {/* Usamos la imagen importada */}
-            {/* El texto "CEA" se ha eliminado del span si solo quieres la imagen */}
+            <span className="logo-text">CEA</span>
           </div>
 
           {/* Navegación de escritorio */}
@@ -240,7 +233,7 @@ const generateCargoDescription = async () => {
           {/* Botón de menú móvil */}
           <div className="menu-button-mobile">
             <button onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <Icon name="X" className="menu-icon" /> : <Icon name="Menu" className="menu-icon" />}
+              {isMenuOpen ? <FontAwesomeIcon icon={faTimes} className="menu-icon" /> : <FontAwesomeIcon icon={faBars} className="menu-icon" />}
             </button>
           </div>
         </nav>
@@ -290,15 +283,15 @@ const generateCargoDescription = async () => {
           <div className="services-grid">
             {/* Servicio 1: Conexión de Carga y Transporte */}
             <div className="service-card">
-              <Icon name="Truck" className="service-icon" />
+              <FontAwesomeIcon icon={faTruck} className="service-icon" />
               <h3 className="service-card-title">Conexión de Carga y Transporte</h3>
-              <p className="service-card-description"> {/* Corregido: eliminado 'className' duplicado */}
+              <p className="service-card-description">
                 Conectamos eficientemente a empresas que necesitan enviar mercancías con transportistas verificados, asegurando la mejor opción para cada viaje.
               </p>
             </div>
             {/* Servicio 2: Gestión de Acuerdos */}
             <div className="service-card">
-              <Icon name="Warehouse" className="service-icon" />
+              <FontAwesomeIcon icon={faWarehouse} className="service-icon" />
               <h3 className="service-card-title">Gestión de Acuerdos</h3>
               <p className="service-card-description">
                 Facilitamos la formalización y el seguimiento de los acuerdos de viaje, brindando seguridad y transparencia en cada transacción.
@@ -306,15 +299,15 @@ const generateCargoDescription = async () => {
             </div>
             {/* Servicio 3: Seguimiento y Visibilidad */}
             <div className="service-card">
-              <Icon name="Package" className="service-icon" />
+              <FontAwesomeIcon icon={faBoxOpen} className="service-icon" />
               <h3 className="service-card-title">Seguimiento y Visibilidad</h3>
-              <p className="service-card-description"> {/* Corregido: eliminado 'className' duplicado */}
+              <p className="service-card-description">
                 Ofrecemos una plataforma para el seguimiento en tiempo real de los envíos, brindando total visibilidad desde el origen hasta el destino.
               </p>
             </div>
             {/* Servicio 4: Asesoramiento Logístico Personalizado */}
             <div className="service-card">
-              <Icon name="Package" className="service-icon" />
+              <FontAwesomeIcon icon={faBoxOpen} className="service-icon" />
               <h3 className="service-card-title">Asesoramiento Logístico Personalizado</h3>
               <p className="service-card-description">
                 Brindamos consultoría experta para resolver desafíos logísticos y optimizar la cadena de intermediación entre empresas y transportistas.
@@ -322,7 +315,7 @@ const generateCargoDescription = async () => {
             </div>
             {/* Servicio 5: Soporte 24/7 */}
             <div className="service-card">
-              <Icon name="Phone" className="service-icon" />
+              <FontAwesomeIcon icon={faPhone} className="service-icon" />
               <h3 className="service-card-title">Soporte 24/7</h3>
               <p className="service-card-description">
                 Nuestro equipo está disponible 24/7 para ofrecer asistencia y resolver cualquier incidencia durante el proceso de conexión y transporte.
@@ -330,7 +323,7 @@ const generateCargoDescription = async () => {
             </div>
             {/* Servicio 6: Red de Transportistas Confiables */}
             <div className="service-card">
-              <Icon name="Truck" className="service-icon" />
+              <FontAwesomeIcon icon={faTruck} className="service-icon" />
               <h3 className="service-card-title">Red de Transportistas Confiables</h3>
               <p className="service-card-description">
                 Acceda a nuestra amplia red de transportistas calificados y con experiencia, garantizando la seguridad y fiabilidad en cada envío.
@@ -354,12 +347,12 @@ const generateCargoDescription = async () => {
               </p>
             </div>
             <div className="about-image-container">
-            <img
-  src={logoCamion} // <--- Cambia esta línea de 'aboutUsImage' a 'logoCamion'
-  alt="Imagen de logística de CEA"
-  className="about-image"
-  onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/600x400/ADD8E6/000000?text=Imagen+No+Disponible'; }}
-/>
+              <img
+                src={logoCamion} // Usamos la imagen del logo para esta sección
+                alt="Imagen de logística de CEA"
+                className="about-image"
+                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/600x400/ADD8E6/000000?text=Imagen+No+Disponible'; }}
+              />
             </div>
           </div>
         </div>
@@ -375,15 +368,15 @@ const generateCargoDescription = async () => {
               <h3 className="card-title">Información</h3>
               <div className="contact-details">
                 <p className="contact-item">
-                  <Icon name="MapPin" className="contact-icon" />
-                  Lules , Tucumán, Argentina
+                  <FontAwesomeIcon icon={faMapPin} className="contact-icon" />
+                  Lules, Tucumán, Argentina
                 </p>
                 <p className="contact-item">
-                  <Icon name="Phone" className="contact-icon" />
+                  <FontAwesomeIcon icon={faPhone} className="contact-icon" />
                   381303866
                 </p>
                 <p className="contact-item">
-                  <Icon name="Mail" className="contact-icon" />
+                  <FontAwesomeIcon icon={faEnvelope} className="contact-icon" />
                   info@cea-logistica.com
                 </p>
               </div>
@@ -443,7 +436,7 @@ const generateCargoDescription = async () => {
           {/* Generador de Descripción de Carga (Nueva Sección LLM) */}
           <div className="cargo-generator-card">
             <h3 className="card-title-center">
-              <Icon name="FileText" className="cargo-generator-icon" />
+              <FontAwesomeIcon icon={faFileAlt} className="cargo-generator-icon" />
               ✨ Generador de Descripción de Carga
             </h3>
             <p className="cargo-generator-description">
@@ -482,16 +475,25 @@ const generateCargoDescription = async () => {
               {generatedDescription && (
                 <div className="generated-description-box">
                   <h4 className="generated-description-title">Descripción Generada:</h4>
-                  <p className="generated-description-text">{generatedDescription}</p>
+                  {/* Muestra la descripción como texto plano */}
+                  <p className="generated-description-text" style={{ whiteSpace: 'pre-wrap' }}>
+                    {generatedDescription}
+                  </p>
                   <button
                     onClick={() => {
-                      document.execCommand('copy');
-                      const textarea = document.createElement('textarea');
-                      textarea.value = generatedDescription;
-                      document.body.appendChild(textarea);
-                      textarea.select();
-                      document.execCommand('copy');
-                      document.body.removeChild(textarea);
+                      if (textareaRef.current) {
+                        textareaRef.current.value = generatedDescription; // Copia el texto tal cual
+                        textareaRef.current.select();
+                        try {
+                          document.execCommand('copy');
+                        } catch (err) {
+                          console.error('Error al copiar al portapapeles:', err);
+                        } finally {
+                          window.getSelection().removeAllRanges();
+                        }
+                      } else {
+                        console.error('El textarea de copia no está disponible.');
+                      }
                     }}
                     className="copy-button"
                   >
@@ -509,30 +511,31 @@ const generateCargoDescription = async () => {
         <div className="container footer-content">
           <div className="logo-container-footer">
             <img src={logoCamion} alt="Logo CEA" className="logo-icon-footer" /> {/* Usamos la misma imagen importada */}
-            {/* El texto "CEA" se ha eliminado del span si solo quieres la imagen */}
+            <span className="logo-text">CEA</span>
           </div>
           <ul className="footer-links">
-            <li><button className="footer-link" onClick={() => alert("Privacidad")}>Privacidad</button></li>
-<li><button className="footer-link" onClick={() => alert("Términos")}>Términos</button></li>
-<li><button className="footer-link" onClick={() => alert("Mapa del sitio")}>Mapa del sitio</button></li>
-</ul>
+            <li><button className="footer-link" onClick={() => console.log("Navegar a Privacidad")}>Privacidad</button></li>
+            <li><button className="footer-link" onClick={() => console.log("Navegar a Términos")}>Términos</button></li>
+            <li><button className="footer-link" onClick={() => console.log("Navegar a Mapa del sitio")}>Mapa del sitio</button></li>
+          </ul>
 
-<div className="social-icons">
-  {}
-  <button
-  className="social-icon-link"
-  onClick={() => window.open("https://www.facebook.com/luckita.campisi/", "_blank")}
->
-  <FontAwesomeIcon icon={faFacebookF} size="2x" />
-</button>
+          <div className="social-icons">
+            {/* Icono de Facebook */}
+            <button
+              className="social-icon-link"
+              onClick={() => window.open("https://www.facebook.com/luckita.campisi/", "_blank")}
+            >
+              <FontAwesomeIcon icon={faFacebookF} size="2x" />
+            </button>
 
-<button
-  className="social-icon-link"
-  onClick={() => window.open("https://wa.me/5493813013866", "_blank")}
->
-  <FontAwesomeIcon icon={faWhatsapp} size="2x" />
-</button>
-</div>
+            {/* Icono de WhatsApp */}
+            <button
+              className="social-icon-link"
+              onClick={() => window.open("https://wa.me/5493813013866", "_blank")}
+            >
+              <FontAwesomeIcon icon={faWhatsapp} size="2x" />
+            </button>
+          </div>
 
           <p className="copyright-text">
             &copy; {new Date().getFullYear()} CEA Logística. Todos los derechos reservados.
@@ -546,7 +549,7 @@ const generateCargoDescription = async () => {
         className="chatbot-toggle-button"
         aria-label="Abrir Chatbot"
       >
-        <Icon name="MessageSquare" className="chatbot-icon" />
+        <FontAwesomeIcon icon={faCommentAlt} className="chatbot-icon" /> {/* Usando FontAwesomeIcon directamente */}
       </button>
 
       {/* Ventana del Chatbot */}
@@ -555,17 +558,17 @@ const generateCargoDescription = async () => {
           <div className="chatbot-header">
             <h3 className="chatbot-title">Asistente Virtual CEA</h3>
             <button onClick={() => setIsChatbotOpen(false)} className="chatbot-close-button">
-              <Icon name="X" className="chatbot-close-icon" />
+              <FontAwesomeIcon icon={faTimes} className="chatbot-close-icon" /> {/* Usando FontAwesomeIcon directamente */}
             </button>
           </div>
-          <div className="chatbot-messages">
+          <div ref={chatbotMessagesRef} className="chatbot-messages"> {/* Aplica la ref aquí */}
             {chatHistory.length === 0 ? (
               <div className="chatbot-initial-message">
                 ¡Hola! ¿En qué puedo ayudarte hoy?
               </div>
             ) : (
-              chatHistory.map((msg, index) => (
-                <div key={index} className={`message-container ${msg.role === 'user' ? 'user-message-container' : 'bot-message-container'}`}>
+              chatHistory.map((msg) => (
+                <div key={msg.id} className={`message-container ${msg.role === 'user' ? 'user-message-container' : 'bot-message-container'}`}>
                   <span className={`message-bubble ${msg.role === 'user' ? 'user-message-bubble' : 'bot-message-bubble'}`}>
                     {msg.parts[0].text}
                   </span>
@@ -603,1034 +606,1027 @@ const generateCargoDescription = async () => {
         </div>
       )}
 
+      {/* Textarea oculto para la función de copiar al portapapeles */}
+      <textarea
+        ref={textareaRef}
+        style={{
+          position: 'absolute',
+          left: '-9999px',
+          top: '-9999px',
+          opacity: 0,
+          pointerEvents: 'none',
+        }}
+        readOnly
+      />
       {/* Estilos CSS */}
       <style>
         {`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
 
-        :root {
-            /* Nueva paleta de colores */
-            --primary-blue:rgb(28, 31, 31); /* Azul profundo */
-            --dark-blue:rgb(12, 63, 95);    /* Azul muy oscuro para gradientes */
-            --light-blue: #eaf2f8;   /* Azul muy claro para fondos */
-            --medium-blue: #3498db;  /* Azul estándar vibrante */
-            --accent-blue: #2e86c1;  /* Azul de acento */
-            --gray-bg: #f8f9fa;      /* Gris muy claro, casi blanco */
-            --text-gray: #34495e;    /* Gris oscuro para texto principal */
-            --light-gray-text: #7f8c8d; /* Gris para texto secundario */
-            --border-gray: #dbe4eb;  /* Gris claro para bordes */
-            --white: #ffffff;
-            --black-overlay: rgba(0, 0, 0, 0.5);
-            --green-button: #2ecc71; /* Verde fresco */
-            --green-button-hover: #27ae60; /* Verde más oscuro en hover */
-        }
+:root {
+  --primary-color: #0056b3; /* Azul oscuro */
+  --secondary-color: #007bff; /* Azul vibrante */
+  --accent-color: #28a745; /* Verde para acentos/éxito */
+  --text-color: #333;
+  --light-text-color: #f8f9fa;
+  --background-light: #f4f7f6;
+  --background-dark: #2c3e50; /* Azul oscuro para secciones */
+  --card-background: #ffffff;
+  --border-color: #dee2e6;
+  --hover-color: #004085;
+  --shadow-light: rgba(0, 0, 0, 0.1);
+  --shadow-medium: rgba(0, 0, 0, 0.2);
+  --shadow-strong: rgba(0, 0, 0, 0.3);
+}
 
-        body {
-          font-family: 'Inter', sans-serif;
-          margin: 0;
-          padding: 0;
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-          color: var(--text-gray);
-          background-color: var(--gray-bg);
-        }
+body {
+  font-family: 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: var(--background-light);
+  color: var(--text-color);
+  line-height: 1.6;
+}
 
-        .app-container {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+.app-container {
+  overflow-x: hidden; /* Evita el scroll horizontal */
+}
 
-        .container {
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 1.5rem; /* px-6 */
-            padding-right: 1.5rem; /* px-6 */
-        }
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
 
-        /* Header */
-        .header {
-            background-color: var(--white);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Sombra más pronunciada */
-            padding-top: 1rem; /* py-4 */
-            padding-bottom: 1rem; /* py-4 */
-            position: sticky;
-            top: 0;
-            z-index: 50;
-            border-bottom-left-radius: 0.75rem; /* rounded-b-lg */
-            border-bottom-right-radius: 0.75rem; /* rounded-b-lg */
-        }
+/* Header & Navbar */
+.header {
+  background-color: var(--background-dark);
+  color: var(--light-text-color);
+  padding: 15px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 10px var(--shadow-medium);
+  border-bottom-left-radius: 12px; /* Rounded corners */
+  border-bottom-right-radius: 12px; /* Rounded corners */
+}
 
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 1.5rem; /* px-6 */
-            padding-right: 1.5rem; /* px-6 */
-        }
-        @media (min-width: 768px) { /* md */
-            .navbar {
-                padding-left: 3rem; /* md:px-12 */
-                padding-right: 3rem; /* md:px-12 */
-            }
-        }
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
 
-        .logo-container {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem; /* Aumentado el espacio */
-        }
+.logo-container {
+  display: flex;
+  align-items: center;
+}
 
-        .logo-icon {
-            height: 5.5rem; /* Aumentado el tamaño del icono */
-            width: 5.5rem; /* Aumentado el tamaño del icono */
-            /* El color no afecta a una imagen, pero se mantiene por si se vuelve a usar un SVG */
-            transition: transform 0.3s ease; /* Efecto de transición */
-        }
-        .logo-icon:hover {
-            transform: scale(1.1) rotate(-5deg); /* Efecto en hover */
-        }
+.logo-icon {
+  height: 50px; /* Ajusta el tamaño del logo */
+  width: auto;
+  margin-right: 10px;
+  border-radius: 8px; /* Bordes redondeados para el logo */
+}
 
-        /* El logo-text span se ha eliminado del JSX, por lo que estas reglas ya no se aplicarán directamente */
-        .logo-text {
-            font-size: 2.5rem; /* Aumentado el tamaño del texto */
-            font-weight: 800; /* Más audaz */
-            color: var(--primary-blue);
-            transition: color 0.3s ease;
-        }
-        .logo-text:hover {
-            color: var(--accent-blue);
-        }
+.logo-text {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--light-text-color);
+}
 
-        .nav-links-desktop {
-            display: none;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            gap: 2.5rem; /* Aumentado el espacio entre links */
-        }
-        @media (min-width: 768px) { /* md */
-            .nav-links-desktop {
-                display: flex;
-            }
-        }
+.nav-links-desktop {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 
-        .nav-button {
-            color: var(--text-gray);
-            transition: color 0.3s ease, transform 0.2s ease; /* Más efectos */
-            font-weight: 600; /* Más audaz */
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0.5rem 0;
-        }
-        .nav-button:hover {
-            color: var(--accent-blue);
-            transform: translateY(-3px); /* Pequeño levantamiento */
-        }
+.nav-links-desktop li {
+  margin-left: 30px;
+}
 
-        .menu-button-mobile {
-            display: block;
-        }
-        @media (min-width: 768px) { /* md */
-            .menu-button-mobile {
-                display: none;
-            }
-        }
+.nav-button {
+  background: none;
+  border: none;
+  color: var(--light-text-color);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 8px 15px;
+  border-radius: 8px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
 
-        .menu-icon {
-            height: 2rem; /* h-8 */
-            width: 2rem; /* w-8 */
-            color: var(--text-gray);
-        }
+.nav-button:hover {
+  background-color: var(--hover-color);
+  color: #ffffff;
+}
 
-        .mobile-menu {
-            background-color: var(--white);
-            margin-top: 1rem; /* mt-4 */
-            border-radius: 0.75rem; /* rounded-lg */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15); /* Sombra más fuerte */
-        }
-        @media (min-width: 768px) { /* md */
-            .mobile-menu {
-                display: none;
-            }
-        }
+.menu-button-mobile {
+  display: none; /* Oculto por defecto en escritorio */
+}
 
-        .mobile-nav-links {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 1rem; /* py-4 */
-            padding-bottom: 1rem; /* py-4 */
-            gap: 1.25rem; /* space-y-4 */
-            list-style: none;
-            margin: 0;
-        }
+.menu-button-mobile button {
+  background: none;
+  border: none;
+  color: var(--light-text-color);
+  font-size: 28px;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 8px;
+}
 
-        .mobile-nav-button {
-            color: var(--text-gray);
-            transition: color 0.3s ease;
-            font-weight: 600; /* Más audaz */
-            font-size: 1.25rem; /* text-lg */
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0.5rem 0;
-        }
-        .mobile-nav-button:hover {
-            color: var(--accent-blue);
-        }
+.menu-icon {
+  color: var(--light-text-color);
+  font-size: 28px;
+}
 
-        /* Hero Section */
-        .hero-section {
-            position: relative;
-            color: var(--white);
-            padding-top: 7rem; /* py-24 */
-            padding-bottom: 7rem; /* py-24 */
-            overflow: hidden;
-            border-bottom-left-radius: 0.75rem;
-            border-bottom-right-radius: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
-        @media (min-width: 768px) { /* md */
-            .hero-section {
-                padding-top: 9rem; /* md:py-32 */
-                padding-bottom: 9rem; /* md:py-32 */
-            }
-        }
+/* Mobile Menu */
+.mobile-menu {
+  background-color: var(--background-dark);
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 10px var(--shadow-medium);
+  position: absolute;
+  width: 100%;
+  left: 0;
+  top: 80px; /* Ajusta según la altura de tu header */
+  z-index: 999;
+  animation: slideDown 0.3s ease-out forwards;
+  border-bottom-left-radius: 12px; /* Rounded corners */
+  border-bottom-right-radius: 12px; /* Rounded corners */
+}
 
-        .hero-overlay {
-            position: absolute;
-            inset: 0;
-            background-color: var(--black-overlay);
-            z-index: 10;
-        }
+.mobile-nav-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
 
-        .hero-content {
-            position: relative;
-            z-index: 20;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-        }
+.mobile-nav-links li {
+  margin-bottom: 15px;
+}
 
-        .hero-title {
-            font-size: 2.75rem; /* Más grande */
-            font-weight: 900; /* Más audaz */
-            line-height: 1.2;
-            margin-bottom: 1.5rem;
-            animation: fadeInDown 1s ease-out forwards;
-        }
-        @media (min-width: 768px) { /* md */
-            .hero-title {
-                font-size: 4.5rem; /* Más grande en desktop */
-            }
-        }
+.mobile-nav-button {
+  background: none;
+  border: none;
+  color: var(--light-text-color);
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  width: 100%;
+}
 
-        .hero-subtitle {
-            font-size: 1.25rem;
-            margin-bottom: 2.5rem;
-            max-width: 48rem;
-            margin-left: auto;
-            margin-right: auto;
-            opacity: 0;
-            animation: fadeInUp 1s ease-out forwards;
-            animation-delay: 0.5s;
-            animation-fill-mode: forwards;
-        }
-        @media (min-width: 768px) { /* md */
-            .hero-subtitle {
-                font-size: 1.375rem;
-            }
-        }
+.mobile-nav-button:hover {
+  background-color: var(--hover-color);
+  color: #ffffff;
+}
 
-        .hero-button {
-            background-color: var(--white);
-            color: var(--primary-blue);
-            padding: 1.125rem 2.25rem; /* Más padding */
-            border-radius: 9999px;
-            font-size: 1.25rem; /* Más grande */
-            font-weight: 700; /* Más audaz */
-            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.2); /* Sombra más fuerte */
-            transform: scale(1);
-            transition: transform 0.3s ease, background-color 0.3s ease;
-            opacity: 0;
-            animation: fadeInUp 1s ease-out forwards;
-            animation-delay: 1s;
-            animation-fill-mode: forwards;
-            border: none;
-            cursor: pointer;
-        }
-        .hero-button:hover {
-            background-color: var(--light-blue);
-            transform: scale(1.08); /* Efecto de escala más pronunciado */
-        }
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 
-        /* Services Section */
-        .services-section {
-            padding-top: 5rem;
-            padding-bottom: 5rem;
-            background-color: var(--gray-bg);
-        }
-        @media (min-width: 768px) {
-            .services-section {
-                padding-top: 7rem;
-                padding-bottom: 7rem;
-            }
-        }
+/* Hero Section */
+.hero-section {
+  position: relative;
+  height: 600px; /* Altura fija para el hero */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--light-text-color);
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed; /* Efecto parallax */
+  border-bottom-left-radius: 12px; /* Rounded corners */
+  border-bottom-right-radius: 12px; /* Rounded corners */
+}
 
-        .section-title {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: var(--text-gray);
-            margin-bottom: 3.5rem;
-            text-align: center;
-        }
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Oscurece la imagen de fondo */
+  border-bottom-left-radius: 12px; /* Rounded corners */
+  border-bottom-right-radius: 12px; /* Rounded corners */
+}
 
-        .services-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-        }
-        @media (min-width: 768px) {
-            .services-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        @media (min-width: 1024px) {
-            .services-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 800px;
+  padding: 20px;
+}
 
-        .service-card {
-            background-color: var(--white);
-            padding: 2.25rem; /* Más padding */
-            border-radius: 1rem; /* Más redondeado */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1); /* Sombra más suave */
-            transition: all 0.3s ease;
-            transform: translateY(0);
-            border: 1px solid var(--border-gray);
-        }
-        .service-card:hover {
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15); /* Sombra más fuerte en hover */
-            transform: translateY(-0.75rem); /* Efecto de levantamiento más pronunciado */
-        }
+.hero-title {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  line-height: 1.2;
+  text-shadow: 2px 2px 4px var(--shadow-medium);
+  animation: fadeInDown 1s ease-out forwards;
+}
 
-        .service-icon {
-            height: 4.5rem; /* Aumentado el tamaño del icono */
-            width: 4.5rem; /* Aumentado el tamaño del icono */
-            color: var(--medium-blue); /* Color ajustado */
-            margin-left: auto;
-            margin-right: auto;
-            margin-bottom: 1.75rem;
-        }
+.hero-subtitle {
+  font-size: 22px;
+  margin-bottom: 30px;
+  opacity: 0.9;
+  animation: fadeInUp 1s ease-out forwards;
+  animation-delay: 0.5s;
+  animation-fill-mode: forwards;
+}
 
-        .service-card-title {
-            font-size: 1.625rem; /* Más grande */
-            font-weight: 700;
-            color: var(--text-gray);
-            margin-bottom: 1.25rem;
-        }
+.hero-button {
+  background-color: var(--accent-color);
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 600;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 4px 8px var(--shadow-medium);
+  animation: fadeInUp 1s ease-out forwards;
+  animation-delay: 1s;
+  animation-fill-mode: forwards;
+}
 
-        .service-card-description {
-            color: var(--light-gray-text);
-            line-height: 1.6;
-        }
+.hero-button:hover {
+  background-color: #218838;
+  transform: translateY(-3px);
+}
 
-        /* About Us Section */
-        .about-section {
-            padding-top: 5rem;
-            padding-bottom: 5rem;
-            background-color: var(--primary-blue); /* Color ajustado */
-            color: var(--white);
-            border-top-left-radius: 0.75rem;
-            border-top-right-radius: 0.75rem;
-        }
-        @media (min-width: 768px) {
-            .about-section {
-                padding-top: 7rem;
-                padding-bottom: 7rem;
-            }
-        }
+/* Animations */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
-        .about-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3.5rem; /* Más espacio */
-            text-align: center;
-        }
-        @media (min-width: 768px) {
-            .about-content {
-                flex-direction: row;
-                text-align: left;
-            }
-        }
+/* Section Common Styles */
+.section-title {
+  font-size: 38px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 50px;
+  color: var(--primary-color);
+  position: relative;
+  padding-bottom: 10px;
+}
 
-        .about-text {
-            width: 100%;
-        }
-        @media (min-width: 768px) {
-            .about-text {
-                width: 50%;
-            }
-        }
+.section-title::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 4px;
+  background-color: var(--secondary-color);
+  border-radius: 2px;
+}
 
-        .section-title-light {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 1.75rem;
-        }
+.section-title-light {
+  font-size: 38px;
+  font-weight: 700;
+  margin-bottom: 30px;
+  color: var(--light-text-color);
+  position: relative;
+  padding-bottom: 10px;
+}
 
-        .about-description {
-            font-size: 1.125rem;
-            line-height: 1.7;
-            margin-bottom: 1.5rem;
-        }
-        .about-description:last-child {
-            margin-bottom: 0;
-        }
+.section-title-light::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 80px;
+  height: 4px;
+  background-color: var(--secondary-color);
+  border-radius: 2px;
+}
 
-        .about-image-container {
-            width: 100%;
-        }
-        @media (min-width: 768px) {
-            .about-image-container {
-                width: 50%;
-            }
-        }
+/* Services Section */
+.services-section {
+  padding: 80px 0;
+  background-color: var(--background-light);
+}
 
-        .about-image {
-            border-radius: 1rem; /* Más redondeado */
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3); /* Sombra más fuerte */
-            width: 100%;
-            height: auto;
-            object-fit: cover;
-        }
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+}
 
-        /* Contact Section */
-        .contact-section {
-            padding-top: 5rem;
-            padding-bottom: 5rem;
-            background-color: var(--gray-bg);
-        }
-        @media (min-width: 768px) {
-            .contact-section {
-                padding-top: 7rem;
-                padding-bottom: 7rem;
-            }
-        }
+.service-card {
+  background-color: var(--card-background);
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  box-shadow: 0 4px 15px var(--shadow-light);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid var(--border-color);
+}
 
-        .contact-grid {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 3.5rem;
-        }
-        @media (min-width: 768px) {
-            .contact-grid {
-                flex-direction: row;
-            }
-        }
+.service-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 8px 20px var(--shadow-medium);
+}
 
-        .contact-info-card, .contact-form-card {
-            background-color: var(--white);
-            padding: 2.25rem; /* Más padding */
-            border-radius: 1rem; /* Más redondeado */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            border: 1px solid var(--border-gray);
-            width: 100%;
-        }
-        @media (min-width: 768px) {
-            .contact-info-card {
-                width: 33.333333%;
-            }
-            .contact-form-card {
-                width: 66.666667%;
-            }
-        }
+.service-icon {
+  font-size: 50px;
+  color: var(--secondary-color);
+  margin-bottom: 20px;
+}
 
-        .card-title {
-            font-size: 1.625rem;
-            font-weight: 700;
-            color: var(--text-gray);
-            margin-bottom: 1.75rem;
-        }
+.service-card-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 15px;
+}
 
-        .contact-details {
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-            text-align: left;
-        }
+.service-card-description {
+  font-size: 16px;
+  color: var(--text-color);
+  flex-grow: 1; /* Permite que la descripción ocupe el espacio restante */
+}
 
-        .contact-item {
-            display: flex;
-            align-items: center;
-            color: var(--text-gray);
-            font-size: 1rem;
-        }
+/* About Us Section */
+.about-section {
+  padding: 80px 0;
+  background-color: var(--background-dark);
+  color: var(--light-text-color);
+  border-top-left-radius: 12px; /* Rounded corners */
+  border-top-right-radius: 12px; /* Rounded corners */
+}
 
-        .contact-icon {
-            height: 1.75rem; /* Más grande */
-            width: 1.75rem; /* Más grande */
-            color: var(--medium-blue);
-            margin-right: 0.75rem;
-        }
+.about-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 50px;
+}
 
-        .contact-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1.75rem; /* Más espacio */
-        }
+.about-text {
+  flex: 1;
+}
 
-        .form-group {
-            text-align: left;
-        }
+.about-description {
+  font-size: 18px;
+  margin-bottom: 20px;
+  line-height: 1.8;
+  opacity: 0.9;
+}
 
-        .form-label {
-            display: block;
-            color: var(--text-gray);
-            font-size: 0.9375rem; /* Ligeramente más grande */
-            font-weight: 600; /* Más audaz */
-            margin-bottom: 0.625rem;
-        }
+.about-image-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 300px; /* Asegura un tamaño mínimo para la imagen */
+}
 
-        .form-input, .form-textarea {
-            width: 100%;
-            padding: 0.875rem 1.125rem; /* Más padding */
-            border: 1px solid var(--border-gray);
-            border-radius: 0.625rem; /* Más redondeado */
-            outline: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .form-input:focus, .form-textarea:focus {
-            border-color: var(--medium-blue);
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.4); /* Sombra de foco más suave */
-        }
-        .form-textarea {
-            resize: vertical;
-        }
+.about-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px var(--shadow-strong);
+}
 
-        .submit-button {
-            width: 100%;
-            background-color: var(--accent-blue);
-            color: var(--white);
-            padding: 0.875rem 1.75rem; /* Más padding */
-            border-radius: 0.625rem; /* Más redondeado */
-            font-weight: 700; /* Más audaz */
-            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Sombra más pronunciada */
-            transform: scale(1);
-            border: none;
-            cursor: pointer;
-        }
-        .submit-button:hover {
-            background-color: var(--primary-blue);
-            transform: scale(1.03);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-        }
+/* Contact Section */
+.contact-section {
+  padding: 80px 0;
+  background-color: var(--background-light);
+}
 
-        /* Cargo Generator Section */
-        .cargo-generator-card {
-            margin-top: 5rem; /* Más margen */
-            background-color: var(--white);
-            padding: 2.5rem; /* Más padding */
-            border-radius: 1rem; /* Más redondeado */
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-            border: 1px solid var(--border-gray);
-            text-align: center;
-        }
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 40px;
+  margin-bottom: 60px;
+}
 
-        .card-title-center {
-            font-size: 1.625rem;
-            font-weight: 700;
-            color: var(--text-gray);
-            margin-bottom: 1.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+.contact-info-card,
+.contact-form-card {
+  background-color: var(--card-background);
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 4px 15px var(--shadow-light);
+  border: 1px solid var(--border-color);
+}
 
-        .cargo-generator-icon {
-            height: 2.25rem; /* Más grande */
-            width: 2.25rem; /* Más grande */
-            color: var(--medium-blue);
-            margin-right: 0.75rem;
-        }
+.card-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 30px;
+  text-align: center;
+}
 
-        .cargo-generator-description {
-            color: var(--light-gray-text);
-            margin-bottom: 1.25rem;
-            line-height: 1.6;
-        }
+.contact-details .contact-item {
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  margin-bottom: 15px;
+  color: var(--text-color);
+}
 
-        .cargo-generator-form {
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-        }
+.contact-details .contact-item:last-child {
+  margin-bottom: 0;
+}
 
-        .generate-button {
-            width: 100%;
-            background-color: var(--green-button);
-            color: var(--white);
-            padding: 0.875rem 1.75rem;
-            border-radius: 0.625rem;
-            font-weight: 700;
-            transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-            transform: scale(1);
-            border: none;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .generate-button:hover {
-            background-color: var(--green-button-hover);
-            transform: scale(1.03);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-        }
-        .generate-button:disabled {
-            opacity: 0.6; /* Ligeramente más opaco */
-            cursor: not-allowed;
-            transform: scale(1); /* Sin efecto de escala al estar deshabilitado */
-            box-shadow: none;
-        }
+.contact-details .contact-icon {
+  font-size: 24px;
+  color: var(--secondary-color);
+  margin-right: 15px;
+  width: 24px; /* Asegura ancho fijo para alineación */
+  text-align: center;
+}
 
-        .spinner {
-            animation: spin 1s linear infinite;
-            -webkit-animation: spin 1s linear infinite;
-            height: 1.25rem;
-            width: 1.25rem;
-            color: var(--white);
-            margin-right: 0.75rem;
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        @-webkit-keyframes spin {
-            from { -webkit-transform: rotate(0deg); }
-            to { -webkit-transform: rotate(360deg); }
-        }
+.contact-form .form-group {
+  margin-bottom: 20px;
+}
 
-        .generated-description-box {
-            margin-top: 1.75rem;
-            padding: 1.25rem; /* Más padding */
-            background-color: var(--light-blue);
-            border: 1px solid var(--medium-blue);
-            border-radius: 0.625rem;
-            text-align: left;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05); /* Sombra interna sutil */
-        }
+.form-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
 
-        .generated-description-title {
-            font-size: 1.1875rem; /* Ligeramente más grande */
-            font-weight: 700;
-            color: var(--primary-blue);
-            margin-bottom: 0.625rem;
-        }
+.form-input,
+.form-textarea {
+  width: calc(100% - 20px); /* Ajusta padding */
+  padding: 12px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 16px;
+  color: var(--text-color);
+  background-color: #fdfdfd;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
 
-        .generated-description-text {
-            color: var(--text-gray);
-            white-space: pre-wrap;
-            line-height: 1.6;
-        }
+.form-input:focus,
+.form-textarea:focus {
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  outline: none;
+}
 
-        .copy-button {
-            margin-top: 1rem;
-            background-color: var(--medium-blue);
-            color: var(--white);
-            padding: 0.625rem 1.125rem; /* Más padding */
-            border-radius: 0.625rem;
-            font-size: 0.9375rem; /* Ligeramente más grande */
-            transition: background-color 0.3s ease, transform 0.2s ease;
-            border: none;
-            cursor: pointer;
-        }
-        .copy-button:hover {
-            background-color: var(--accent-blue);
-            transform: translateY(-2px); /* Pequeño levantamiento */
-        }
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
 
-        /* Footer */
-        .footer {
-            background-color: var(--text-gray);
-            color: var(--white);
-            padding-top: 3rem;
-            padding-bottom: 2.5rem;
-            border-top-left-radius: 0.75rem;
-            border-top-right-radius: 0.75rem;
-            margin-top: auto; /* Empuja el footer hacia abajo */
-        }
+.submit-button {
+  background-color: var(--primary-color);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  width: 100%;
+  box-shadow: 0 4px 8px var(--shadow-light);
+}
 
-        .footer-content {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            /* Aumenta el padding horizontal para más espacio en los lados */
-            padding-left: 2rem; /* Nuevo */
-            padding-right: 2rem; /* Nuevo */
-        }
-        @media (min-width: 768px) {
-            .footer-content {
-                flex-direction: row;
-                /* Añade un gap para separar los elementos en escritorio */
-                gap: 3rem; /* Nuevo: Aumenta el espacio entre el logo, enlaces y iconos */
-                padding-left: 3rem; /* Nuevo: Más padding en desktop */
-                padding-right: 3rem; /* Nuevo: Más padding en desktop */
-            }
-        }
+.submit-button:hover {
+  background-color: var(--hover-color);
+  transform: translateY(-2px);
+}
+
+/* Cargo Generator Section */
+.cargo-generator-card {
+  background-color: var(--card-background);
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 4px 15px var(--shadow-light);
+  margin-top: 40px;
+  border: 1px solid var(--border-color);
+}
+
+.card-title-center {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 20px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.cargo-generator-icon {
+  font-size: 32px;
+  color: var(--accent-color);
+}
+
+.cargo-generator-description {
+  font-size: 16px;
+  color: var(--text-color);
+  text-align: center;
+  margin-bottom: 30px;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.generate-button {
+  background-color: var(--accent-color);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  width: 100%;
+  box-shadow: 0 4px 8px var(--shadow-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.generate-button:hover:not(:disabled) {
+  background-color: #218838;
+  transform: translateY(-2px);
+}
+
+.generate-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  width: 20px;
+  height: 20px;
+  color: #fff;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.generated-description-box {
+  background-color: #e9f7ef; /* Fondo suave para la descripción generada */
+  border: 1px solid #d4edda;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 30px;
+  word-wrap: break-word; /* Asegura que el texto largo se ajuste */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.generated-description-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent-color);
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.generated-description-text {
+  font-size: 16px;
+  color: var(--text-color);
+  white-space: pre-wrap; /* Preserva saltos de línea y espacios */
+  margin-bottom: 15px;
+}
+
+.copy-button {
+  background-color: var(--secondary-color);
+  color: #ffffff;
+  font-size: 16px;
+  padding: 8px 15px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.copy-button:hover {
+  background-color: var(--hover-color);
+}
+
+/* Footer */
+.footer {
+  background-color: var(--background-dark);
+  color: var(--light-text-color);
+  padding: 40px 0 20px;
+  text-align: center;
+  border-top-left-radius: 12px; /* Rounded corners */
+  border-top-right-radius: 12px; /* Rounded corners */
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.logo-container-footer {
+  margin-bottom: 15px;
+}
+
+.logo-icon-footer {
+  height: 60px; /* Ajusta el tamaño del logo en el footer */
+  width: auto;
+  border-radius: 8px;
+}
+
+.footer-links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 25px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .footer-link {
   background: none;
   border: none;
-  color: #ffffff;
-  cursor: pointer;
-  padding: 5px 10px;
+  color: var(--light-text-color);
+  text-decoration: none;
   font-size: 16px;
-  text-decoration: underline;
   transition: color 0.3s ease;
+  cursor: pointer;
 }
 
 .footer-link:hover {
-  color: #00ccff;
+  color: var(--secondary-color);
+}
+
+.social-icons {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
 }
 
 .social-icon-link {
   background: none;
   border: none;
-  font-size: 24px;
-  color: #ffffff;
+  color: var(--light-text-color);
+  font-size: 28px; /* Ajusta el tamaño del icono de Font Awesome */
   cursor: pointer;
-  transition: transform 0.2s ease, color 0.2s ease;
-  margin-right: 10px;
+  transition: color 0.3s ease, transform 0.2s ease;
+  padding: 0; /* Elimina padding extra si lo tiene */
+  display: flex; /* Para centrar el icono si el botón es más grande */
+  align-items: center;
+  justify-content: center;
 }
 
 .social-icon-link:hover {
-  transform: scale(1.2);
-  color: #00ccff;
+  color: var(--secondary-color);
+  transform: translateY(-3px);
 }
 
-        .logo-container-footer {
-            display: flex;
-            align-items: center;
-            gap: 0.625rem;
-            margin-bottom: 2rem; /* Aumentado para más espacio debajo del logo en móvil */
-        }
-        @media (min-width: 768px) {
-            .logo-container-footer {
-                margin-bottom: 0;
-            }
-        }
+.copyright-text {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  width: 100%; /* Asegura que la línea de borde ocupe todo el ancho */
+}
 
-        .social-icons {
-            display: flex;
-            gap: 1.5rem; /* Ligeramente aumentado el espacio entre los iconos individuales */
-            margin-top: 2rem; /* Aumentado para más espacio encima de los iconos en móvil */
-        }
-        @media (min-width: 768px) {
-            .social-icons {
-                margin-top: 0;
-            }
-        }
+/* Chatbot Styles */
+.chatbot-toggle-button {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background-color: var(--secondary-color);
+  color: #ffffff;
+  padding: 16px;
+  border-radius: 9999px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.3s ease, transform 0.3s ease;
+  z-index: 50;
+  transform: scale(1);
+}
 
-        .logo-icon-footer {
-            height: 3.5rem; /* Más grande */
-            width: 4.5rem; /* Más grande */
-            color:rgb(11, 38, 91); /* Un azul más claro para el footer */
-            transition: transform 0.3s ease;
-        }
-        .logo-icon-footer:hover {
-            transform: scale(1.1) rotate(5deg);
-        }
+.chatbot-toggle-button:hover {
+  background-color: var(--hover-color);
+  transform: scale(1.1);
+}
 
-        /* El logo-text-footer span se ha eliminado del JSX, por lo que estas reglas ya no se aplicarán directamente */
-        .logo-text-footer {
-            font-size: 1.75rem; /* Más grande */
-            font-weight: 700;
-            color: #9bbbdc;
-            transition: color 0.3s ease;
-        }
-        .logo-text-footer:hover {
-            color: var(--white);
-        }
+.chatbot-icon {
+  height: 32px;
+  width: 32px;
+}
 
-        .footer-links {
-            display: flex;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            gap: 1.75rem;
-        }
+.chatbot-window {
+  position: fixed;
+  bottom: 80px;
+  right: 24px;
+  width: 320px;
+  background-color: var(--card-background);
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  border: 1px solid var(--border-color);
+}
 
-        .footer-link {
-            color: #c0c4c7; /* Gris más claro */
-            transition: color 0.3s ease;
-            text-decoration: none;
-            font-weight: 500;
-        }
-        .footer-link:hover {
-            color: var(--white);
-        }
+.chatbot-header {
+  background-color: var(--secondary-color);
+  color: #ffffff;
+  padding: 16px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-        .social-icons {
-            display: flex;
-            gap: 1.25rem;
-            margin-top: 1rem;
-        }
-        @media (min-width: 768px) {
-            .social-icons {
-                margin-top: 0;
-            }
-        }
+.chatbot-title {
+  font-size: 18px;
+  font-weight: 600;
+}
 
-        .social-icon-link {
-            color: #c0c4c7;
-            transition: color 0.3s ease, transform 0.2s ease;
-        }
-        .social-icon-link:hover {
-            color: var(--white);
-            transform: translateY(-2px);
-        }
+.chatbot-close-button {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
 
-        .social-icon {
-            height: 1.625rem; /* Ligeramente más grande */
-            width: 1.625rem;
-        }
+.chatbot-close-button:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
 
-        .copyright-text {
-            color: #aeb5bb; /* Gris más oscuro */
-            font-size: 0.9375rem;
-            margin-top: 2rem; /* Más margen */
-            text-align: center;
-            width: 100%;
-        }
+.chatbot-close-icon {
+  height: 24px;
+  width: 24px;
+}
+
+.chatbot-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto; /* Habilita el scroll vertical */
+  max-height: 256px; /* Altura máxima para el área de mensajes */
+  /* Custom scrollbar styles */
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+}
+
+.chatbot-messages::-webkit-scrollbar {
+  width: 8px;
+}
+.chatbot-messages::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+.chatbot-messages::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+.chatbot-messages::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+.chatbot-initial-message {
+  text-align: center;
+  color: #6b7280;
+  margin-top: 16px;
+}
+
+.message-container {
+  margin-bottom: 12px;
+}
+
+.user-message-container {
+  text-align: right;
+}
+
+.bot-message-container {
+  text-align: left;
+}
+
+.message-bubble {
+  display: inline-block;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.user-message-bubble {
+  background-color: #e0f2fe;
+  color: #1e40af;
+}
+
+.bot-message-bubble {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.chatbot-typing-indicator {
+  text-align: center;
+  color: #6b7280;
+}
+
+.chatbot-input-area {
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+}
+
+.chatbot-input {
+  flex: 1;
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chatbot-input:focus {
+  border-color: var(--secondary-color);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.chatbot-send-button {
+  background-color: var(--secondary-color);
+  color: #ffffff;
+  padding: 8px 16px;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.chatbot-send-button:hover:not(:disabled) {
+  background-color: var(--hover-color);
+}
+
+.chatbot-send-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
 
 
-        /* Chatbot Styles */
-        .chatbot-toggle-button {
-            position: fixed;
-            bottom: 1.75rem;
-            right: 1.75rem;
-            background-color: var(--accent-blue);
-            color: var(--white);
-            padding: 1.125rem; /* Más padding */
-            border-radius: 9999px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); /* Sombra más fuerte */
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            z-index: 50;
-            transform: scale(1);
-            border: none;
-            cursor: pointer;
-        }
-        .chatbot-toggle-button:hover {
-            background-color: var(--primary-blue);
-            transform: scale(1.15); /* Efecto de escala más pronunciado */
-        }
+/* Responsive Design */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 15px;
+  }
 
-        .chatbot-icon {
-            height: 2.25rem; /* Más grande */
-            width: 2.25rem;
-        }
+  .nav-links-desktop {
+    display: none; /* Oculta la navegación de escritorio en móviles */
+  }
 
-        .chatbot-window {
-            position: fixed;
-            bottom: 6rem; /* bottom-20 */
-            right: 1.75rem; /* right-6 */
-            width: 20rem; /* w-80 */
-            background-color: var(--white);
-            border-radius: 0.75rem; /* Más redondeado */
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3); /* Sombra más fuerte */
-            display: flex;
-            flex-direction: column;
-            z-index: 50;
-            border: 1px solid var(--border-gray);
-        }
-        @media (min-width: 768px) { /* md */
-            .chatbot-window {
-                width: 26rem; /* Más ancho en desktop */
-            }
-        }
+  .menu-button-mobile {
+    display: block; /* Muestra el botón de menú en móviles */
+  }
 
-        .chatbot-header {
-            background-color: var(--accent-blue);
-            color: var(--white);
-            padding: 1.125rem;
-            border-top-left-radius: 0.75rem;
-            border-top-right-radius: 0.75rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+  .hero-title {
+    font-size: 36px;
+  }
 
-        .chatbot-title {
-            font-size: 1.25rem; /* Más grande */
-            font-weight: 700;
-        }
+  .hero-subtitle {
+    font-size: 18px;
+  }
 
-        .chatbot-close-button {
-            background: none;
-            border: none;
-            color: var(--white);
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-        .chatbot-close-button:hover {
-            color: #eaf2f8; /* light-blue */
-        }
+  .hero-button {
+    font-size: 18px;
+    padding: 12px 25px;
+  }
 
-        .chatbot-close-icon {
-            height: 1.625rem; /* Más grande */
-            width: 1.625rem;
-        }
+  .section-title,
+  .section-title-light,
+  .card-title,
+  .card-title-center {
+    font-size: 30px;
+    margin-bottom: 40px;
+  }
 
-        .chatbot-messages {
-            flex: 1;
-            padding: 1.25rem;
-            overflow-y-auto;
-            height: 18rem; /* Más alto */
-        }
+  .services-grid,
+  .contact-grid,
+  .about-content {
+    grid-template-columns: 1fr; /* Una columna en pantallas pequeñas */
+  }
 
-        .chatbot-initial-message {
-            text-align: center;
-            color: var(--light-gray-text);
-            margin-top: 1rem;
-            font-style: italic;
-        }
+  .about-content {
+    flex-direction: column; /* Apila el texto y la imagen */
+  }
 
-        .message-container {
-            margin-bottom: 0.875rem;
-        }
+  .about-image-container {
+    order: -1; /* Mueve la imagen arriba del texto en móvil */
+    margin-bottom: 30px;
+  }
 
-        .user-message-container {
-            text-align: right;
-        }
+  .contact-info-card,
+  .contact-form-card,
+  .cargo-generator-card {
+    padding: 30px 20px;
+  }
 
-        .bot-message-container {
-            text-align: left;
-        }
+  .form-input,
+  .form-textarea {
+    width: calc(100% - 20px); /* Ajusta para el padding */
+  }
 
-        .message-bubble {
-            display: inline-block;
-            padding: 0.875rem; /* Más padding */
-            border-radius: 0.625rem;
-            max-width: 85%; /* Limita el ancho de los mensajes */
-            word-wrap: break-word; /* Rompe palabras largas */
-        }
+  .footer-links {
+    flex-direction: column;
+    gap: 10px;
+  }
 
-        .user-message-bubble {
-            background-color: var(--light-blue);
-            color: var(--primary-blue);
-        }
+  .chatbot-window {
+    width: calc(100% - 48px); /* Ajusta el ancho para móviles, 24px de padding a cada lado */
+    right: 24px;
+    left: 24px;
+    bottom: 80px;
+  }
+}
 
-        .bot-message-bubble {
-            background-color: var(--border-gray);
-            color: var(--text-gray);
-        }
+@media (max-width: 480px) {
+  .hero-title {
+    font-size: 28px;
+  }
 
-        .chatbot-typing-indicator {
-            text-align: center;
-            color: var(--light-gray-text);
-            font-style: italic;
-        }
+  .hero-subtitle {
+    font-size: 16px;
+  }
 
-        .chatbot-input-area {
-            padding: 1.25rem;
-            border-top: 1px solid var(--border-gray);
-            display: flex;
-        }
+  .section-title,
+  .section-title-light,
+  .card-title,
+  .card-title-center {
+    font-size: 26px;
+    margin-bottom: 30px;
+  }
 
-        .chatbot-input {
-            flex: 1;
-            padding: 0.625rem 1.125rem;
-            border: 1px solid var(--border-gray);
-            border-top-left-radius: 0.625rem;
-            border-bottom-left-radius: 0.625rem;
-            outline: none;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .chatbot-input:focus {
-            border-color: var(--medium-blue);
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.4);
-        }
-        .chatbot-input:disabled {
-            background-color: #f3f4f6;
-            cursor: not-allowed;
-        }
+  .service-card-title {
+    font-size: 20px;
+  }
 
-        .chatbot-send-button {
-            background-color: var(--accent-blue);
-            color: var(--white);
-            padding: 0.625rem 1.125rem;
-            border-top-right-radius: 0.625rem;
-            border-bottom-right-radius: 0.625rem;
-            transition: background-color 0.3s ease;
-            border: none;
-            cursor: pointer;
-        }
-        .chatbot-send-button:hover {
-            background-color: var(--primary-blue);
-        }
-        .chatbot-send-button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
+  .service-card-description {
+    font-size: 15px;
+  }
 
-        /* Custom Scrollbar */
-        .chatbot-messages::-webkit-scrollbar {
-          width: 8px;
-        }
-        .chatbot-messages::-webkit-scrollbar-track {
-          background: #f1f1f1;
-          border-radius: 10px;
-        }
-        .chatbot-messages::-webkit-scrollbar-thumb {
-          background: #888;
-          border-radius: 10px;
-        }
-        .chatbot-messages::-webkit-scrollbar-thumb:hover {
-          background: #555;
-        }
+  .contact-details .contact-item,
+  .form-label,
+  .form-input,
+  .form-textarea,
+  .generated-description-text {
+    font-size: 15px;
+  }
 
-        /* Animations */
-        @keyframes fadeInDown {
-          from {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
+  .submit-button,
+  .generate-button,
+  .copy-button {
+    font-size: 16px;
+    padding: 10px 20px;
+  }
+}
         `}
       </style>
     </div>
